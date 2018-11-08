@@ -24,7 +24,7 @@ def index():
 def keyboard():
     keyboard = {
     "type" : "buttons",
-    "buttons" : ["메뉴", "로또", "고양이", "영화", "영화저장"]
+    "buttons" : ["메뉴", "로또", "고양이", "영화", "아이린"]
     }
     return jsonify(keyboard)
 
@@ -46,8 +46,9 @@ def message():
         msg = pick
     elif user_msg == "로또":
         nums = random.sample(range(1,46), 6)
+        nums = sorted(nums)
         nums = [str(i) for i in nums]
-        msg = ",".join(sorted(nums))
+        msg = ",".join(nums)
     
     elif user_msg == "고양이":
         img_bool = True
@@ -56,6 +57,23 @@ def message():
         cat_url = req[0]['url']
         url = cat_url
         msg = "나만 고양이 없어 :("
+    elif user_msg == "아이린":
+        img_bool = True
+        api = 'https://api.tumblr.com/v2/tagged?tag=%EC%95%84%EC%9D%B4%EB%A6%B0&api_key=DCEbuRVSfRoPGYWPTPROlkNxvf7Q9QiU34aaKuEnGIAekRvdgZ'
+
+        req = requests.get(api).json()
+        
+        posts = req['response']
+        
+        iu_url_list = []
+        for i in range(len(posts)):
+            if posts[i]['type'] == 'photo':
+                if posts[i]['photos'][0]['original_size']['url'][-3:] == 'jpg':            
+                    #print ( posts[i]['photos'][0]['original_size']['url'])
+                    iu_url_list.append(posts[i]['photos'][0]['original_size']['url'])
+        msg = "아이린"
+        
+        url = random.choice(iu_url_list)
         
     elif user_msg == "영화":
         img_bool = True
@@ -97,7 +115,7 @@ def message():
         },
      'keyboard':{
         "type" : "buttons",
-        "buttons" : ["로또", "메뉴", "고양이", "영화", "영화저장"]
+        "buttons" : ["로또", "메뉴", "고양이", "영화", "아이린"]
         }
     }
     
@@ -106,13 +124,13 @@ def message():
          'text':msg,
          'photo':{
                   "url": url,
-                  "width": 720,
-                  "height": 630
+                  "width": 480,
+                  "height": 640
                  }
                 },
      'keyboard':{
         "type" : "buttons",
-        "buttons" : ["로또", "메뉴", "고양이", "영화", "영화저장"]
+        "buttons" : ["로또", "메뉴", "고양이", "영화", "아이린"]
                 }
                 }
     if img_bool:
