@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+from sqlalchemy.sql.expression import func
 import random
 import requests, json
 from bs4 import BeautifulSoup
@@ -9,11 +10,21 @@ from models import *
 
 app = Flask(__name__)
 
+app.config["SQLALCHEMY_DATABASE_URI"] = 'postgresql:///movie'
+app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
+db.init_app(app)
+migrate = Migrate(app, db)
+
+@app.route('/')
+def index():
+    movies = Movie.query.all()
+    return render_template('index.html', movies=movies)
+
 @app.route('/keyboard')
 def keyboard():
     keyboard = {
     "type" : "buttons",
-    "buttons" : ["메뉴", "로또", "고양이", "영화"]
+    "buttons" : ["메뉴", "로또", "고양이", "영화", "영화저장"]
     }
     return jsonify(keyboard)
 
@@ -48,6 +59,7 @@ def message():
         
     elif user_msg == "영화":
         img_bool = True
+        Movie.query.delete()
         naver_movie = 'https://movie.naver.com/movie/running/current.nhn#'
         
         req = requests.get(naver_movie).text
@@ -58,18 +70,26 @@ def message():
         thumb_list = soup.select('div.star_t1 > a')
         img_url_list = soup.select('div.thumb > a > img')
         
-        movies = {}
-        for i in range(0, 5):
-            movies[i] = {
-                'title' : title_list[i].text,
-                'star' : thumb_list[i].text[0:4],
-                'url' : img_url_list[0]['src']
+        # movies = {}
+        # for i in range(0, 5):
+        #     movies[i] = {
+        #         'title' : title_list[i].text,
+        #         'star' : thumb_list[i].text[0:4],
+        #         'url' : img_url_list[i]['src']
                 
-            }
-        ran_num = random.randrange(0, 5)
-        pick_movie = movies[ran_num]
-        msg = pick_movie['title'] + '/' + pick_movie['star']
-        url = pick_movie['url']
+        #     }
+        for i in range(0, 5):
+            movie = Movie(title_list[i].text, thumb_list[i].text[0:4], img_url_list[i]['src'])
+            db.session.add(movie)
+            db.session.commit()
+        msg = "저장완료"
+        movier = Movie.query.order_by(func.random()).first()
+        msg = movier.title + ' / ' + str(movier.star)
+        url = movier.img
+#    elif user_msg == "영화저장":
+
+        
+        
         
     return_dict = {
      'message':{
@@ -77,7 +97,7 @@ def message():
         },
      'keyboard':{
         "type" : "buttons",
-        "buttons" : ["로또", "메뉴", "고양이", "영화"]
+        "buttons" : ["로또", "메뉴", "고양이", "영화", "영화저장"]
         }
     }
     
@@ -92,7 +112,7 @@ def message():
                 },
      'keyboard':{
         "type" : "buttons",
-        "buttons" : ["로또", "메뉴", "고양이", "영화"]
+        "buttons" : ["로또", "메뉴", "고양이", "영화", "영화저장"]
                 }
                 }
     if img_bool:
